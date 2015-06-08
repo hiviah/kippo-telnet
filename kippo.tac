@@ -26,6 +26,7 @@ from kippo.core.config import config
 import kippo.core.auth
 import kippo.core.honeypot
 import kippo.core.ssh
+import kippo.core.telnet
 from kippo import core
 
 factory = core.ssh.HoneyPotSSHFactory()
@@ -51,6 +52,10 @@ for i in ssh_addr.split():
         int(cfg.get('honeypot', 'ssh_port')), factory,
         interface=i)
     service.setServiceParent(application)
+
+f = core.telnet.HoneyPotTelnetFactory()
+tsvc = internet.TCPServer(6023, f)
+tsvc.setServiceParent(application)
 
 if cfg.has_option('honeypot', 'interact_enabled') and \
         cfg.get('honeypot', 'interact_enabled').lower() in \
