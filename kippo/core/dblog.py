@@ -3,6 +3,8 @@
 
 import re, time, socket
 
+mainLogger = None
+
 class DBLogger(object):
     def __init__(self, cfg):
         self.cfg = cfg
@@ -40,6 +42,11 @@ class DBLogger(object):
                 self.handleClientVersion),
             )]
         self.start(cfg)
+        
+        #shitty singleton hach
+        global mainLogger
+        if not mainLogger:
+            mainLogger = self
 
     def logDispatch(self, sessionid, msg):
         if sessionid not in self.sessions.keys():

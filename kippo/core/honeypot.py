@@ -31,6 +31,8 @@ class HoneyPotCommand(object):
 
     def exit(self):
         self.honeypot.cmdstack.pop()
+        if len(self.honeypot.cmdstack) == 0:
+            self.honeypot.cmdstack.append(HoneyPotShell(self.honeypot))
         self.honeypot.cmdstack[-1].resume()
 
     def ctrl_c(self):
