@@ -6,7 +6,7 @@ from twisted.conch.insults import insults
 from twisted.conch.ssh import session
 
 from kippo.core.protocol import HoneyPotInteractiveProtocol, LoggingServerProtocol
-from kippo.core.ssh import HoneyPotAvatar
+from kippo.core.ssh import HoneyPotAvatar, HoneyPotSSHSession
 from kippo.core.honeypot import HoneyPotEnvironment, HoneyPotShell
 
 
@@ -17,6 +17,12 @@ from kippo.core.honeypot import HoneyPotEnvironment, HoneyPotShell
 #HoneyPotBaseProtocol.terminal.transport.session.conn - twisted.conch.ssh.connection.SSHConnection
 #HoneyPotBaseProtocol.terminal.transport.session.conn.transport - HoneyPotTransport
 
+class ConnectionWrapper(object):
+    
+    def __init__(self, transport):
+        self.transport = transport
+        
+    
 class TelnetShell(recvline.HistoricRecvLine):
     """Simple echo protocol.
 
@@ -26,6 +32,7 @@ class TelnetShell(recvline.HistoricRecvLine):
     """
     
     ps = ("root@svr03:/# ", "...")
+    sessionCounter = 0
     
     def __init__(self, *args, **kwargs):
         env = HoneyPotEnvironment()
@@ -37,6 +44,11 @@ class TelnetShell(recvline.HistoricRecvLine):
 
     def lineReceived(self, line):
         if not self.shell:
+            session = HoneyPotSSHSession()
+            self.terminal.transport.session = session
+            TelnetShell.sessionCounter += 1
+            self.terminal.transport.transport.sessionno = TelnetShell.sessionCounter #fffuuu almost global variable
+            self.terminal.transport.session.conn = ConnectionWrapper(self.terminal.transport)
             self.honeypot.terminal = self.terminal
             self.shell = HoneyPotShell(self.honeypot)
         
@@ -51,6 +63,7 @@ class HoneyPotTelnetFactory(protocol.ServerFactory):
                                              #telnetShellArg,
                                              #telnetShellKWArg="zxcv"
                                              )
+        self.dbloggers = []
         
     def makeProtocol(self):
         env = HoneyPotEnvironment()
@@ -63,5 +76,9 @@ class HoneyPotTelnetFactory(protocol.ServerFactory):
         #honeypot = HoneyPotInteractiveProtocol(user, env)
         return serverProtocol
     
+    def logDispatch(self, sessionid, msg):
+        for dblog in self.dbloggers:
+            dblog.logDispatch(sessionid, msg)
+
 #env = HoneyPotEnvironment()
 #user = HoneyPotAvatar("root", env)
