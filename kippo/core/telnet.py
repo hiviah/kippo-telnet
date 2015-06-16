@@ -27,7 +27,7 @@ class ConnectionWrapper(object):
         self.transport = transport
         
     
-class TelnetShell(recvline.HistoricRecvLine):
+class TelnetShell(recvline.RecvLine):
     """Simple echo protocol.
 
     Accepts lines of input and writes them back to its connection.  If
@@ -35,8 +35,9 @@ class TelnetShell(recvline.HistoricRecvLine):
     is dropped.
     """
     
-    ps = ("root@svr03:/# ", "...")
-    sessionCounter = 0
+    #ps = ("root@svr03:/# ", "...")
+    ps = ("Username: ", "...")
+    sessionCounter = 0x1000000 #hack - they should not interfere with session numbers of ssh sessions
     
     def __init__(self, *args, **kwargs):
         env = HoneyPotEnvironment()
@@ -44,10 +45,21 @@ class TelnetShell(recvline.HistoricRecvLine):
         
         self.honeypot = HoneyPotInteractiveProtocol(user, env)
         self.shell = None
+        self.username = None
+        self.password = None
         pass
 
     def lineReceived(self, line):
-        if not self.shell:
+        #shitty state machine
+        if self.username is None:
+            self.username = line
+            self.ps = ("Password: ", "...")
+            self.terminal.write("Password: ")
+        elif self.password is None:
+            self.password = line
+            self.ps = ("root@svr03:/# ", "...")
+            self.terminal.write("root@svr03:/# ")
+        elif not self.shell:
             session = HoneyPotSSHSession()
             self.terminal.transport.session = session
             self.terminal.transport.transport.sessionno = TelnetShell.sessionCounter #fffuuu almost global variable
@@ -56,7 +68,8 @@ class TelnetShell(recvline.HistoricRecvLine):
             self.honeypot.terminal = self.terminal
             self.shell = HoneyPotShell(self.honeypot)
         
-        self.shell.lineReceived(line)
+        if self.shell:
+            self.shell.lineReceived(line)
 
 class HoneyPotTelnetFactory(protocol.ServerFactory):
     def __init__(self):
