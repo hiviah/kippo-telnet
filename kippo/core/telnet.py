@@ -57,6 +57,7 @@ class TelnetShell(recvline.RecvLine):
             self.terminal.write("Password: ")
         elif self.password is None:
             self.password = line
+            self.factory.logDispatch(TelnetShell.sessionCounter, 'login attempt [%s/%s] succeeded' % (self.username, self.password))
             self.ps = ("root@svr03:/# ", "...")
             self.terminal.write("root@svr03:/# ")
         elif not self.shell:
