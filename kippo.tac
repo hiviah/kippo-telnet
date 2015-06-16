@@ -54,8 +54,14 @@ for i in ssh_addr.split():
     service.setServiceParent(application)
 
 f = core.telnet.HoneyPotTelnetFactory()
-tsvc = internet.TCPServer(6023, f)
-tsvc.setServiceParent(application)
+if cfg.has_option('honeypot', 'telnet_addr'):
+    telnet_addr = cfg.get('honeypot', 'telnet_addr')
+else:
+    telnet_addr = '0.0.0.0'
+
+for i in telnet_addr.split():
+    tsvc = internet.TCPServer(int(cfg.get('honeypot', 'telnet_port')), f, interface=i)
+    tsvc.setServiceParent(application)
 
 if cfg.has_option('honeypot', 'interact_enabled') and \
         cfg.get('honeypot', 'interact_enabled').lower() in \
