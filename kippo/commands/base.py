@@ -38,7 +38,9 @@ commands['/usr/bin/who'] = command_w
 
 class command_echo(HoneyPotCommand):
     def call(self):
-        self.writeln(' '.join(self.args))
+        #unescape shell escapes and remove -e and -n parameters
+        args = [arg.decode("string_escape") for arg in self.args if not arg in ("-e", "-n")]
+        self.writeln(' '.join(args))
 commands['/bin/echo'] = command_echo
 
 # for testing purposes
